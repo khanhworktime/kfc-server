@@ -6,12 +6,19 @@ const userRouter = require("./routes/user")
 const supplierRouter = require("./routes/supplier")
 const ingredientRouter = require("./routes/ingredient")
 const foodRouter = require("./routes/food")
+const loginRouter = require("./routes/login")
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
+app.post('/api/', (req, res) => {
+    return res.json({success: true, message: "Connected"})
+})
+
+
+app.use('/api/login', loginRouter)
 app.use('/api/users', userRouter)
 app.use('/api/suppliers', supplierRouter)
 app.use('/api/ingredients', ingredientRouter)

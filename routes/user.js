@@ -14,7 +14,8 @@ router.get('/:id', async (req, res) => {
 
         // Find user
         const user = await prisma.user.findFirst({
-            where: {id: id}
+            where: {id: id}, 
+            select: {id:true, name: true, email: true, role: true, state: true}
         })
 
         if (user === null) return res.status(404).json({success: false, message: `User does not exist`})
@@ -31,7 +32,7 @@ router.get('/', async (req, res)=>{
     try{
 
         // Find user
-        const user = await prisma.user.findMany()
+        const user = await prisma.user.findMany({select: {id:true, name: true, email: true, role: true, state: true}})
 
         return res.json({success: true, users: user})
     }
@@ -44,15 +45,15 @@ router.get('/', async (req, res)=>{
 
 //Create a user
 router.post('/', async (req, res) => {
-    const {name, username, email, password, role} = req.body
+    const {name, email, password, role, state} = req.body
     try{
         // Create a new user
         let newUser = {
-            name, username, email, password, role
+            name, email, password, role, state
         }
         // Query this
         const queryRes = await prisma.user.create({data: newUser})
-
+        
         return res.json({success: true, user: queryRes})
     }
     catch(e) {
@@ -62,20 +63,20 @@ router.post('/', async (req, res) => {
                 return res.status(404).json({success: false, message: `Violent unique constraint, ${e.meta.target} already existed`})
             }
         }
-
+        return res.status(404).json({success: false, message: e.message})
     }
 })
 
 //Update user infomation
 router.put('/:id', async (req, res) => {
-    const {name, email, role} = req.body
+    const {name, email, role, state} = req.body
     const {id} = req.params
-    const currentId = req.header["userId"]
+    // const currentId = req.header["userId"]
     try{
 
-        // Normal account can update their name, password. Only admin account can update user's role
+        //Normal account can update their name, password. Only admin account can update user's role
         const currentUser = await prisma.user.findFirst({where: {id: currentId}})
-        if (role && currentUser.role !== "admin") return 
+        if (role && currentUser.role !== "admin") throw new Error("Not admin user")
         const queryRes = await prisma.user.update({
             where: {
                 id: id
@@ -83,7 +84,8 @@ router.put('/:id', async (req, res) => {
             data: {
                 name: name ? name : undefined,
                 email: email ? email: undefined,
-                role: role ? role : undefined
+                role: role ? role : undefined,
+                state: state? state : undefined
             }
         })
 
@@ -95,26 +97,22 @@ router.put('/:id', async (req, res) => {
 })
 
 //Delete user
-//Wanted req : { header: {userId: ""}} , url has a id param (target)
+//Wanted req : { header: {uid: ""}} , url has a id param (target)
 router.delete('/:id', async (req, res) => {
-    const currentuid = req.header("userId")
-    console.log(currentuid)
+    const {uid} = req.body
     const {id} = req.params
     try{
-        const currenUser = await prisma.user.findFirst({
-            where: {id: currentuid}
+        const currentUser = await prisma.user.findFirst({
+            where: {id: uid}
         })
-
-        if (currentUser && currenUser.role !==  "admin") throw new Error("Current user is not admin")
+        
+        if (currentUser && currentUser.role !==  "admin") throw new Error("Current user is not admin")
 
         const queryRes = await prisma.user.delete({
             where: {
                 id: id
             }
         })
-
-        console.log(queryRes)
-
         return res.json({success: true, user: queryRes})
     }
     catch(e) {
