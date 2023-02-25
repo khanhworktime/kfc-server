@@ -1,4 +1,4 @@
-const {PrismaClient, Prisma} = require("@prisma/client")
+const {PrismaClient, Prisma, Food_Cat} = require("@prisma/client");
 
 const express = require("express")
 
@@ -17,6 +17,18 @@ router.get('/', async (req, res)=>{
     }
 })
 
+// Get category types
+router.get('/categories', async(req, res) => {
+    try {
+        let categories = [];
+        for (const cat of Object.keys(Food_Cat)){
+            categories.push(cat)
+        }
+        return res.json({success: true, method: "get", categories})
+    }
+    catch(e){ res.status(500).json({success: false, message: e.message})}
+})
+
 // Get a specific foods infomation
 router.get('/:id', async (req, res) =>{
     const id = req.params.id
@@ -32,12 +44,14 @@ router.get('/:id', async (req, res) =>{
                 return res.status(404).json({success: false, method: "post", message: `${e.meta.target} not found`})
             }
         }
-        return res.status(401).json({success: false, method: "put", message: e.message})
+        return res.status(401).json({success: false, method: "post", message: e.message})
     }
 } )
+
+
 // Create a new food item
 router.post('/', async (req, res) =>{
-    const {name, price, sale_price, img, description, state, category} = req.body
+    let {name, price, sale_price, img, description, state, category} = req.body
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
 
     // If ingredients are posted, create a connect for many-many table
@@ -49,6 +63,8 @@ router.post('/', async (req, res) =>{
     }
 
     try {
+        price = parseFloat(price)
+        sale_price = sale_price !== "" ? parseFloat(sale_price) : price
         let newFood = {
             name, price, sale_price, img, description, state, category
         }
@@ -70,12 +86,11 @@ router.post('/', async (req, res) =>{
 
 // Update food information
 router.put('/:id', async (req, res) => {
-    const {name, price, sale_price, img, description, state, category} = req.body
+    let {name, price, sale_price, img, description, state, category} = req.body
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
-
     const {id} = req.params
     // If ingredients are posted, create a connect for many-many table
-    let connectIngredient;
+    let connectIngredient = {};
     if(ingredients) {
         await prisma.foodIngredient.deleteMany({where: {foodId: id}})
         connectIngredient = {
@@ -87,6 +102,9 @@ router.put('/:id', async (req, res) => {
         }
     }
     try{
+        
+        price = parseFloat(price)
+        sale_price = sale_price !== "" ? parseFloat(sale_price) : price
         const queryRes = await prisma.foodItem.update({
             where: {
                 id

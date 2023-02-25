@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
 
 //Update user infomation
 router.put('/:id', async (req, res) => {
-    const {name, email, role, state} = req.body
+    const {name, email, role, state, currentId} = req.body
     const {id} = req.params
     // const currentId = req.header["userId"]
     try{
