@@ -32,8 +32,8 @@ model Ingredient {
   unit           Ingredient_Unit  @default(the)
   supplierId     String?          @db.Uuid
   price          Decimal
-  supplier       Supplier?        @relation(fields: [supplierId], references: [id])
   foodIngredient FoodIngredient[]
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id])
 }
 
 model FoodItem {
@@ -50,11 +50,11 @@ model FoodItem {
 }
 
 model FoodIngredient {
-  food         FoodItem   @relation(fields: [foodId], references: [id])
   foodId       String     @db.Uuid
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   ingredientId String     @db.Uuid
   amount       Decimal
+  food         FoodItem   @relation(fields: [foodId], references: [id])
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   @@id([foodId, ingredientId])
 }
@@ -97,4 +97,5 @@ enum Food_Cat {
   drink
   desert
   other
+  dessert_drink
 }

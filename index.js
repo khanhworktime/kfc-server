@@ -7,17 +7,20 @@ const supplierRouter = require("./routes/supplier")
 const ingredientRouter = require("./routes/ingredient")
 const foodRouter = require("./routes/food")
 const loginRouter = require("./routes/login")
+const bodyParser = require("body-parser")
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 
 app.post('/api/', (req, res) => {
     return res.json({success: true, message: "Connected"})
 })
 
-
+app.use(express.static(__dirname))
 app.use('/api/login', loginRouter)
 app.use('/api/users', userRouter)
 app.use('/api/suppliers', supplierRouter)

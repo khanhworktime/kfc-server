@@ -11,8 +11,6 @@ const prisma = new PrismaClient();
 router.get('/:id', async (req, res) => {
     const {id} = req.params
     try{
-
-        // Find user
         const user = await prisma.user.findFirst({
             where: {id: id}, 
             select: {id:true, name: true, email: true, role: true, state: true}
@@ -84,7 +82,6 @@ router.put('/:id', async (req, res) => {
             data: {
                 name: name ? name : undefined,
                 email: email ? email: undefined,
-                role: role ? role : undefined,
                 state: state? state : undefined
             }
         })

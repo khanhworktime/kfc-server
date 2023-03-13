@@ -1,6 +1,10 @@
 const {PrismaClient, Prisma, Food_Cat} = require("@prisma/client");
 
-const express = require("express")
+const express = require("express");
+const fs = require("fs");
+const upload = require("../plugin/multer")
+const cloudinary = require("../plugin/cloudinary");
+const streamifier = require("streamifier")
 
 const router = express.Router()
 
@@ -50,10 +54,10 @@ router.get('/:id', async (req, res) =>{
 
 
 // Create a new food item
-router.post('/', async (req, res) =>{
-    let {name, price, sale_price, img, description, state, category} = req.body
-    const ingredients = req.body.ingredients // ingredients : [{id, amount}]
+router.post('/', upload.single("image"),  async (req, res) =>{
+    let {name, price, sale_price, description, state, category} = req.body
 
+    const ingredients = req.body.ingredients // ingredients : [{id, amount}]
     // If ingredients are posted, create a connect for many-many table
     let connectIngredient;
     if(ingredients) connectIngredient = {
@@ -62,22 +66,38 @@ router.post('/', async (req, res) =>{
         }
     }
 
+    //Images handler
+
+
+    const imgFile = req.file
     try {
         price = parseFloat(price)
         sale_price = sale_price !== "" ? parseFloat(sale_price) : price
         let newFood = {
-            name, price, sale_price, img, description, state, category
+            name, price, sale_price, description, state, category
         }
-        const queryRes = await prisma.foodItem.create({
-            data: {...newFood, ...connectIngredient}, include: {foodIngredient: true}})
 
+        let queryRes = await prisma.foodItem.create({
+            data: {...newFood, ...connectIngredient}, include: {foodIngredient: true}})
+        // Image upload
+        if (imgFile)
+        {
+            const {path} = imgFile;
+            const fileBuffer = fs.readFileSync(path)
+            const fileStream = streamifier.createReadStream(fileBuffer);
+            const img = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
+            fs.unlinkSync(path);
+            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {img: img}})
+        }
+
+        
         return res.json({success: true, method: "post", food: queryRes})
     }
     catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
             // The .code property can be accessed in a type-safe manner
             if (e.code === 'P2002') {
-                return res.status(404).json({success: false, method: "post", message: `Violent unique constraint, ${e.meta.target} already existed`})
+                return res.status(404).json({success: false, method: "put", message: `Violent unique constraint, ${e.meta.target} already existed`})
             }
         }
         return res.status(401).json({success: false, method: "put", message: e.message})
@@ -85,10 +105,14 @@ router.post('/', async (req, res) =>{
 } )
 
 // Update food information
-router.put('/:id', async (req, res) => {
-    let {name, price, sale_price, img, description, state, category} = req.body
+router.put('/:id',upload.single("image"), async (req, res) => {
+    let {name, price, sale_price, description, state, category} = req.body
+   
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
     const {id} = req.params
+    
+    
+    const imgFile = req.file
     // If ingredients are posted, create a connect for many-many table
     let connectIngredient = {};
     if(ingredients) {
@@ -105,7 +129,8 @@ router.put('/:id', async (req, res) => {
         
         price = parseFloat(price)
         sale_price = sale_price !== "" ? parseFloat(sale_price) : price
-        const queryRes = await prisma.foodItem.update({
+
+        let queryRes = await prisma.foodItem.update({
             where: {
                 id
             },
@@ -113,7 +138,6 @@ router.put('/:id', async (req, res) => {
                 name: name ? name : undefined,
                 price: price ? price : undefined,
                 sale_price: sale_price ? sale_price : undefined,
-                img: img ? img : undefined,
                 description: description ? description : undefined,
                 state: state ? state : undefined,
                 category: category ? category : undefined,
@@ -121,6 +145,16 @@ router.put('/:id', async (req, res) => {
                 ...connectIngredient
             }, include: {foodIngredient: true}
         })
+
+        if (imgFile)
+        {
+            const {path} = imgFile;
+            const fileBuffer = fs.readFileSync(path)
+            const fileStream = streamifier.createReadStream(fileBuffer);
+            const img = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
+            fs.unlinkSync(path);
+            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {img: img}})
+        }
 
         return res.json({success: true, method: "put", food: queryRes})
     }
