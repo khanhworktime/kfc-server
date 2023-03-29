@@ -23,6 +23,7 @@ model Supplier {
   email      String       @unique
   phone      String?
   supplierId String?      @db.Uuid
+  Facility   Facility[]
   Ingredient Ingredient[]
 }
 
@@ -41,7 +42,7 @@ model FoodItem {
   name           String
   price          Decimal
   sale_price     Decimal
-  img            String?
+  image          String?
   description    String?
   create_at      DateTime         @default(now())
   state          Food_State       @default(available)
@@ -57,6 +58,19 @@ model FoodIngredient {
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   @@id([foodId, ingredientId])
+}
+
+model Facility {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  cost         Decimal         @default(0)
+  amount       Decimal
+  issue_amount Decimal         @default(0)
+  state        Facility_State  @default(available)
+  supplierId   String?         @db.Uuid
+  image        String?
+  unit         Ingredient_Unit @default(the)
+  supplier     Supplier?       @relation(fields: [supplierId], references: [id])
 }
 
 enum User_State {
@@ -98,4 +112,10 @@ enum Food_Cat {
   desert
   other
   dessert_drink
+}
+
+enum Facility_State {
+  available
+  unavailable
+  issues
 }

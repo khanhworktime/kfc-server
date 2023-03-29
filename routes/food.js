@@ -4,7 +4,8 @@ const express = require("express");
 const fs = require("fs");
 const upload = require("../plugin/multer")
 const cloudinary = require("../plugin/cloudinary");
-const streamifier = require("streamifier")
+const streamifier = require("streamifier");
+const checkPermission = require("../utils/checkPermission");
 
 const router = express.Router()
 
@@ -56,6 +57,8 @@ router.get('/:id', async (req, res) =>{
 // Create a new food item
 router.post('/', upload.single("image"),  async (req, res) =>{
     let {name, price, sale_price, description, state, category} = req.body
+    let {uid} = req.body;
+    if (!(await checkPermission(uid, ["admin"]))) throw new Error("Permission denied");
 
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
     // If ingredients are posted, create a connect for many-many table
@@ -69,7 +72,7 @@ router.post('/', upload.single("image"),  async (req, res) =>{
     //Images handler
 
 
-    const imgFile = req.file
+    const imageFile = req.file
     try {
         price = parseFloat(price)
         sale_price = sale_price !== "" ? parseFloat(sale_price) : price
@@ -80,14 +83,14 @@ router.post('/', upload.single("image"),  async (req, res) =>{
         let queryRes = await prisma.foodItem.create({
             data: {...newFood, ...connectIngredient}, include: {foodIngredient: true}})
         // Image upload
-        if (imgFile)
+        if (imageFile)
         {
-            const {path} = imgFile;
+            const {path} = imageFile;
             const fileBuffer = fs.readFileSync(path)
             const fileStream = streamifier.createReadStream(fileBuffer);
-            const img = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
+            const image = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
             fs.unlinkSync(path);
-            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {img: img}})
+            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {image: image}})
         }
 
         
@@ -110,9 +113,8 @@ router.put('/:id',upload.single("image"), async (req, res) => {
    
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
     const {id} = req.params
-    
-    
-    const imgFile = req.file
+
+    const imageFile = req.file
     // If ingredients are posted, create a connect for many-many table
     let connectIngredient = {};
     if(ingredients) {
@@ -146,14 +148,14 @@ router.put('/:id',upload.single("image"), async (req, res) => {
             }, include: {foodIngredient: true}
         })
 
-        if (imgFile)
+        if (imageFile)
         {
-            const {path} = imgFile;
+            const {path} = imageFile;
             const fileBuffer = fs.readFileSync(path)
             const fileStream = streamifier.createReadStream(fileBuffer);
-            const img = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
+            const image = await cloudinary.upload(fileStream, "foodItem", queryRes.id);
             fs.unlinkSync(path);
-            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {img: img}})
+            queryRes = await prisma.foodItem.update({where: {id: queryRes.id}, data: {image: image}})
         }
 
         return res.json({success: true, method: "put", food: queryRes})

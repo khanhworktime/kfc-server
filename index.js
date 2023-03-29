@@ -7,6 +7,9 @@ const supplierRouter = require("./routes/supplier")
 const ingredientRouter = require("./routes/ingredient")
 const foodRouter = require("./routes/food")
 const loginRouter = require("./routes/login")
+const facilityRouter = require("./routes/facility")
+const uploadImgRouter = require("./routes/uploadImg")
+
 const bodyParser = require("body-parser")
 
 const app = express()
@@ -26,6 +29,8 @@ app.use('/api/users', userRouter)
 app.use('/api/suppliers', supplierRouter)
 app.use('/api/ingredients', ingredientRouter)
 app.use('/api/foods', foodRouter)
+app.use('/api/facilities', facilityRouter)
+app.use('/api/uploadImg', uploadImgRouter)
 
 app.listen(3000, () =>
     console.log('REST API server ready at: http://localhost:3000'),
