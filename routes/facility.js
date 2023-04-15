@@ -3,9 +3,10 @@ const {PrismaClient, Prisma, Ingredient_Unit} = require("@prisma/client")
 const express = require("express")
 
 const fs = require("fs");
-const upload = require("../plugin/multer")
+const upload = require("../middleware/multer")
 const cloudinary = require("../plugin/cloudinary");
-const streamifier = require("streamifier")
+const streamifier = require("streamifier");
+const verifyToken = require("../middleware/auth");
 
 const router = express.Router()
 
@@ -31,8 +32,9 @@ router.get('/units', async (req, res) =>{
 
 // Get all facilities
 router.get('/', async (req, res)=>{
+    let {warehouse} = req.query
     try {
-        const facilities = await prisma.facility.findMany({include: {supplier: true}})
+        const facilities = await prisma.facility.findMany({include: {supplier: true}, where: {warehouseId: warehouse}})
         return res.json({success: true, facilities})
     }
     catch (e) {
@@ -62,9 +64,8 @@ router.get('/:id', async (req, res) =>{
 
 
 // Create new facility
-router.post('/', upload.single("image"),  async (req, res) =>{
-    let {name, cost, amount, issue_amount, state, unit} = req.body
-
+router.post('/',verifyToken, upload.single("image"),  async (req, res) =>{
+    let {name, cost, amount, issue_amount, state, unit, warehouseId} = req.body
     // TODO: Config the supplier
 
     //Images handler
@@ -74,7 +75,7 @@ router.post('/', upload.single("image"),  async (req, res) =>{
         issue_amount = !isNaN(parseFloat(issue_amount)) ? parseFloat(issue_amount) : 0
         amount = !isNaN(parseFloat(amount)) ? parseFloat(amount) : 0
         let newFacility = {
-            name, cost, amount, issue_amount, state, unit
+            name, cost, amount, issue_amount, state, unit, warehouseId
         }
 
         let queryRes = await prisma.facility.create({
@@ -105,7 +106,7 @@ router.post('/', upload.single("image"),  async (req, res) =>{
 } )
 
 // Update facility information
-router.put('/:id', upload.single("image"), async (req, res) => {
+router.put('/:id',verifyToken, upload.single("image"), async (req, res) => {
     let {name, cost, amount, issue_amount, state, supplierId, unit} = req.body
     const {id} = req.params
     const imageFile = req.file
@@ -156,7 +157,7 @@ router.put('/:id', upload.single("image"), async (req, res) => {
 
 
 //Delete facility
-router.delete('/:id', async (req, res) => {
+router.delete('/:id',verifyToken, async (req, res) => {
     const {id} = req.params
     try{
         const delFacility = prisma.facility.delete({

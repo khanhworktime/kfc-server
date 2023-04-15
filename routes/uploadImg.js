@@ -3,7 +3,7 @@ const express = require("express")
 const router = express.Router()
 
 const fs = require("fs");
-const upload = require("../plugin/multer")
+const upload = require("../middleware/multer")
 router.post('/', upload.single("image"),  async (req, res) =>{
     //Images handler
     const imgFile = req.file

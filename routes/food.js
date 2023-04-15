@@ -2,10 +2,11 @@ const {PrismaClient, Prisma, Food_Cat} = require("@prisma/client");
 
 const express = require("express");
 const fs = require("fs");
-const upload = require("../plugin/multer")
+const upload = require("../middleware/multer")
 const cloudinary = require("../plugin/cloudinary");
 const streamifier = require("streamifier");
 const checkPermission = require("../utils/checkPermission");
+const verifyToken = require("../middleware/auth");
 
 const router = express.Router()
 
@@ -55,7 +56,7 @@ router.get('/:id', async (req, res) =>{
 
 
 // Create a new food item
-router.post('/', upload.single("image"),  async (req, res) =>{
+router.post('/', verifyToken ,upload.single("image"),  async (req, res) =>{
     let {name, price, sale_price, description, state, category} = req.body
     let {uid} = req.body;
     if (!(await checkPermission(uid, ["admin"]))) throw new Error("Permission denied");
@@ -108,7 +109,7 @@ router.post('/', upload.single("image"),  async (req, res) =>{
 } )
 
 // Update food information
-router.put('/:id',upload.single("image"), async (req, res) => {
+router.put('/:id', verifyToken ,upload.single("image"), async (req, res) => {
     let {name, price, sale_price, description, state, category} = req.body
    
     const ingredients = req.body.ingredients // ingredients : [{id, amount}]
