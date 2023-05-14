@@ -65,12 +65,27 @@ router.post('/cart', verifyToken, async (req, res)=> {
 
 router.head("/cart/:id", verifyToken, async (req) =>{
     const {id} = req.params
-    console.log(id);
+    const {action} = req.query
     
     await prisma.receipt.update({
         where: {id},
-        data: {state: "cancel"}
+        data: {state: action}
     })
+
+})
+
+
+router.patch("/order/:id", verifyToken, async (req, res) =>{
+    const {id} = req.params
+    const {action} = req.query
+    
+    await prisma.receipt.update({
+        where: {id},
+        data: {state: action}
+    })
+
+    
+    return res.json({success: true})
 })
 
 router.get("/orders/", verifyToken, async(req, res)=>{
@@ -95,14 +110,47 @@ router.get("/orders/", verifyToken, async(req, res)=>{
         })
         
         if(filter == "getToday")
-        // Lọc chỉ lấy order từ ngày được query
-        orders = orders.filter((order, i)=>{
+            // Lọc chỉ lấy order từ ngày được query
+            orders = orders.filter((order, i)=>{
+
+                // Get only today
                 const createAt = DateTime.fromJSDate(new Date(order.create_at), { zone: 'utc' }).setZone('Asia/Ho_Chi_Minh');
                 return createAt >= startOfDay && createAt < endOfDay;
             })
             .map((order)=>{
+                // Add new props name food for fe to render
                 order.foods = order.Receipt_Detail.map(f => ({...f.food, amount: f.amount}))
                 return order
+            }).sort((r1, r2) => {
+                // Sort by state
+                let s1 = r1.state == "paid" ? 1 : r1.state == "done" ? 2 : 3;
+                let s2 = r2.state == "paid" ? 1 : r2.state == "done" ? 2 : 3;
+                // Sort by time
+                if (s1 == s2) {
+                    const d1 = new Date(r1.create_at)
+                    const d2 = new Date(r2.create_at)
+                    s1 += d1 > d2 ? -1 : 1;
+                }
+                
+                return s1 - s2
+            })
+        else if (filter == "getAll")
+            orders = orders.map((order)=>{
+                // Add new props name food for fe to render
+                order.foods = order.Receipt_Detail.map(f => ({...f.food, amount: f.amount}))
+                return order
+            }).sort((r1, r2) => {
+                // Sort by state
+                let s1 = r1.state == "paid" ? 1 : r1.state == "done" ? 2 : 3;
+                let s2 = r2.state == "paid" ? 1 : r2.state == "done" ? 2 : 3;
+                // Sort by time
+                if (s1 == s2) {
+                    const d1 = new Date(r1.create_at)
+                    const d2 = new Date(r2.create_at)
+                    s1 += d1 > d2 ? -1 : 1;
+                }
+                
+                return s1 - s2
             })
 
         return res.json({success: true, orders})

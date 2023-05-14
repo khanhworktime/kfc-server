@@ -23,7 +23,7 @@ app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
-app.post('/api/', (req, res) => {
+app.get('/api/', (req, res) => {
     return res.json({success: true, message: "Connected"})
 })
 
