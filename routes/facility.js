@@ -87,8 +87,8 @@ router.post('/',verifyToken, upload.single("image"),  async (req, res) =>{
             const fileBuffer = fs.readFileSync(path)
             const fileStream = streamifier.createReadStream(fileBuffer);
             const image = await cloudinary.upload(fileStream, "facility", queryRes.id);
-            fs.unlinkSync(path);
             queryRes = await prisma.facility.update({where: {id: queryRes.id}, data: {image: image}})
+            fs.unlinkSync(path);
         }
 
         
@@ -106,7 +106,7 @@ router.post('/',verifyToken, upload.single("image"),  async (req, res) =>{
 } )
 
 // Update facility information
-router.put('/:id',verifyToken, upload.single("image"), async (req, res) => {
+router.put('/:id',upload.single("image") , async (req, res) => {
     let {name, cost, amount, issue_amount, state, supplierId, unit} = req.body
     const {id} = req.params
     const imageFile = req.file

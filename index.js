@@ -10,8 +10,11 @@ const authRouter = require("./routes/auth")
 const facilityRouter = require("./routes/facility")
 const uploadImgRouter = require("./routes/uploadImg")
 const warehouseRouter = require("./routes/warehouse")
+const inventoryRouter = require("./routes/inventory")
+const saleRouter = require("./routes/sale")
 
 const bodyParser = require("body-parser")
+const { PrismaClient } = require("@prisma/client")
 
 const app = express()
 
@@ -25,6 +28,8 @@ app.post('/api/', (req, res) => {
 })
 
 app.use(express.static(__dirname))
+
+
 app.use('/api/auth', authRouter)
 app.use('/api/users', userRouter)
 app.use('/api/suppliers', supplierRouter)
@@ -33,6 +38,8 @@ app.use('/api/foods', foodRouter)
 app.use('/api/facilities', facilityRouter)
 app.use('/api/uploadImg', uploadImgRouter)
 app.use('/api/warehouse', warehouseRouter)
+app.use('/api/inventory', inventoryRouter)
+app.use('/api/sale/', saleRouter)
 
 app.listen(3000, () =>
     console.log('REST API server ready at: http://localhost:3000'),

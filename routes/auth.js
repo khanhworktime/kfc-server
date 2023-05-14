@@ -26,8 +26,8 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email and/or password incorrect' })
 
         // No permission
-        if (user.role != "admin" && user.role != "wh") return res.status(401).json({ success: false, message: 'No permission!' })
-        
+        if (user.role != "admin" && user.role != "wh" && app == "admin") return res.status(401).json({ success: false, message: 'No permission!' })
+
         // Username found
         const passwordValid = await argon2.verify(user.password, password)
         if (!passwordValid) return res.status(400).json({ success: false, message: 'Username and/or password incorrect' })

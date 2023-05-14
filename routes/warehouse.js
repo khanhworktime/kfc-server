@@ -10,7 +10,7 @@ const upload = require('../middleware/multer')
 const prisma = new PrismaClient();
 
 // Get specific warehouse information
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
     let {uid} = req.body
     let id = req.params.id
     try{
@@ -26,7 +26,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // Get specific warehouse facilities information
-router.get('/:id/facilities', async (req, res) => {
+router.get('/:id/facilities', verifyToken, async (req, res) => {
     let {uid} = req.body
     let id = req.params.id
     try{
@@ -42,7 +42,7 @@ router.get('/:id/facilities', async (req, res) => {
 })
 
 // Get all the warehouse infomation
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     let {uid} = req.body
 
     try{
@@ -58,7 +58,6 @@ router.get('/', async (req, res) => {
 })
 
 
-
 // Create a new warehouse
 router.post('/', verifyToken, upload.none(), async (req, res) => {
     let {uid, name, address, ownerId, state} = req.body
@@ -72,6 +71,38 @@ router.post('/', verifyToken, upload.none(), async (req, res) => {
         return res.json({success: true, warehouse})
     } catch (e) {
         return res.json({success: false, message: e.message})
+    }
+})
+
+
+// Update warehouse
+router.put('/:id', verifyToken, upload.none(), async (req, res) => {
+    let {id} = req.params
+    let {name, address, state} = req.body
+    state = undefined ? 'inactive' : state;
+    try{
+        let warehouse = {name, address, state}
+        warehouse = await prisma.warehouse.update({where: {id}, data: warehouse});
+
+        return res.json({success: true, warehouse})
+    } catch (e) {
+        return res.json({success: false, message: e.message})
+    }
+})
+
+router.delete('/:id', verifyToken, async(req, res)=>{
+    const {id} = req.params
+    try{
+        const warehouse = await prisma.warehouse.findUnique({where: {id}})
+
+        if (req.user.role != "admin" && req.userId != warehouse.ownerId) throw new Error("No permission!")
+
+        const delWarehouse = await prisma.warehouse.delete({where: {id}})
+
+        return res.json({success:true, warehouse: delWarehouse})
+
+    } catch(e) {
+        return res.status(405).json({success:false, message: e.message})
     }
 })
 

@@ -7,6 +7,7 @@ const cloudinary = require("../plugin/cloudinary");
 const streamifier = require("streamifier");
 const checkPermission = require("../utils/checkPermission");
 const verifyToken = require("../middleware/auth");
+const multer = require("multer");
 
 const router = express.Router()
 
@@ -30,9 +31,46 @@ router.get('/categories', async(req, res) => {
         for (const cat of Object.keys(Food_Cat)){
             categories.push(cat)
         }
-        return res.json({success: true, method: "get", categories})
+
+        let categoriesWithLabel = {
+            list: [
+                    "new",
+                    "combo4one",
+                    "combo4group",
+                    "chicken",
+                    "carb",
+                    "snack",
+                    "dessert_drink",
+                    "other",
+            ],
+            labels: ['New', "Combo", "Group Combo", "Fry chicken", "Carb", "Snack", "Dessert & Drink", "Others"]
+        }
+
+        // So lazy to handle this stupid step :< so sorry for whom watch this
+        categoriesWithLabel = categoriesWithLabel.list.map((item, i)=>{
+            return ({name: item, label: categoriesWithLabel.labels[i]})
+        })
+        return res.json({success: true, method: "get", categories, categoriesWithLabel})
     }
-    catch(e){ res.status(500).json({success: false, message: e.message})}
+    catch(e){ return res.status(500).json({success: false, message: e.message})}
+})
+
+router.get('/category/:category', verifyToken, async(req, res) => {
+    const {category} = req.params
+    try{
+        const foods = await prisma.foodItem.findMany({
+            where: {category}
+        })
+
+        const result = {
+            foods,
+            count: foods.length
+        }
+
+        return res.json({success: true, categoryDetail:result})
+    } catch(e) {
+        return res.status(500).json({success: false, message: e.message})
+    }
 })
 
 // Get a specific foods infomation
