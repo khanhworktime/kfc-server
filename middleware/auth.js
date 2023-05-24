@@ -11,6 +11,8 @@ const verifyToken = async (req, res, next) => {
         const decodedToken = jwt.decode(token, process.env.ACCESS_TOKEN_SECRET);
         req.userId = decodedToken.userId;
         req.user = await prisma.user.findUnique({where: {id : req.userId}})
+        if (req.user.state != "available") throw new Error ("User is not allow to access!")
+
         next();
     } catch (error) {
         console.error(error.message)

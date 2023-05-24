@@ -97,7 +97,7 @@ router.get("/orders/", verifyToken, async(req, res)=>{
     try{
         let orders = await prisma.receipt.findMany({
             where : {
-                    NOT: {state: "pending"}
+                    NOT: [{state: "pending"}]
                 },
             include: {
                 Receipt_Detail: {
@@ -115,11 +115,12 @@ router.get("/orders/", verifyToken, async(req, res)=>{
 
                 // Get only today
                 const createAt = DateTime.fromJSDate(new Date(order.create_at), { zone: 'utc' }).setZone('Asia/Ho_Chi_Minh');
-                return createAt >= startOfDay && createAt < endOfDay;
+                return createAt >= startOfDay && createAt < endOfDay && order.Receipt_Detail.length > 0;
             })
             .map((order)=>{
                 // Add new props name food for fe to render
                 order.foods = order.Receipt_Detail.map(f => ({...f.food, amount: f.amount}))
+                order.total = order.Receipt_Detail.reduce((sum, f) => sum + f.food.sale_price * f.amount, 0)
                 return order
             }).sort((r1, r2) => {
                 // Sort by state
@@ -138,6 +139,7 @@ router.get("/orders/", verifyToken, async(req, res)=>{
             orders = orders.map((order)=>{
                 // Add new props name food for fe to render
                 order.foods = order.Receipt_Detail.map(f => ({...f.food, amount: f.amount}))
+                order.total = order.Receipt_Detail.reduce((sum, f) => sum + f.food.sale_price * f.amount, 0)
                 return order
             }).sort((r1, r2) => {
                 // Sort by state

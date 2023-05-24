@@ -18,7 +18,7 @@ exports.upload = (fileStream, folder, setName) => {
               if (result) {
                 resolve(result.url);
               } else {
-                reject(error);
+                return;
               }
             }
           );

@@ -27,6 +27,9 @@ router.post('/login', async (req, res) => {
 
         // No permission
         if (user.role != "admin" && user.role != "wh" && app == "admin") return res.status(401).json({ success: false, message: 'No permission!' })
+        
+        //blocked user
+        if (user.state != "available") return res.status(401).json({ success: false, message: 'User has been blocked!' })
 
         // Username found
         const passwordValid = await argon2.verify(user.password, password)
